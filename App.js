@@ -1,211 +1,91 @@
-import { useState } from 'react';
-
-
-
-function Square({ value, onSquareClick }) {
-
- return (
-
-  <button className="square" onClick={onSquareClick}>
-
-   {value}
-
-  </button>
-
- );
-
-}
-
-function Board({ xIsNext, squares, onPlay }) {
-
- function handleClick(i) {
-
-  if (calculateWinner(squares) || squares[i]) {
-
-   return;
-
-  }
-
-  const nextSquares = squares.slice();
-
-  if (xIsNext) {
-
-   nextSquares[i] = 'X';
-
-  } else {
-
-   nextSquares[i] = 'O';
-
-  }
-
-  onPlay(nextSquares);
-
- }
-
- const winner = calculateWinner(squares);
-
- let status;
-
- if (winner) {
-
-  status = 'Winner: ' + winner;
-
- } else {
-
-  status = 'Next player: ' + (xIsNext ? 'X' : 'O');
-
- }
-
- return (
-
-  <>
-
-   <div className="status">{status}</div>
-
-   <div className="board-row">
-
-    <Square value={squares[0]} onSquareClick={() => handleClick(0)} />
-
-    <Square value={squares[1]} onSquareClick={() => handleClick(1)} />
-
-    <Square value={squares[2]} onSquareClick={() => handleClick(2)} />
-
-   </div>
-
-   <div className="board-row">
-
-    <Square value={squares[3]} onSquareClick={() => handleClick(3)} />
-
-    <Square value={squares[4]} onSquareClick={() => handleClick(4)} />
-
-    <Square value={squares[5]} onSquareClick={() => handleClick(5)} />
-
-   </div>
-
-   <div className="board-row">
-
-    <Square value={squares[6]} onSquareClick={() => handleClick(6)} />
-
-    <Square value={squares[7]} onSquareClick={() => handleClick(7)} />
-
-    <Square value={squares[8]} onSquareClick={() => handleClick(8)} />
-
-   </div>
-
-  </>
-
- );
-
-}
-
-export default function Game() {
-
- const [history, setHistory] = useState([Array(9).fill(null)]);
-
- const [currentMove, setCurrentMove] = useState(0);
-
- const xIsNext = currentMove % 2 === 0;
-
- const currentSquares = history[currentMove];
-
- function handlePlay(nextSquares) {
-
-  const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
-
-  setHistory(nextHistory);
-
-  setCurrentMove(nextHistory.length - 1);
-
- }
-
- function jumpTo(nextMove) {
-
-  setCurrentMove(nextMove);
-
- }
-
- const moves = history.map((squares, move) => {
-
-  let description;
-
-  if (move > 0) {
-
-   description = 'Go to move #' + move;
-
-  } else {
-
-   description = 'Go to game start';
-
-  }
-
-  return (
-
-   <li key={move}>
-
-    <button id="btnmove" onClick={() => jumpTo(move)}>{description}</button>
-
-   </li>
-
-  );
-
- });
-
- return (
-
-  <div className="game">
-
-   <div className="game-board">
-
-    <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} />
-
-   </div>
-
-   <div className="game-info">
-
-    <ol>{moves}</ol>
-
-   </div>
-
-  </div>
-
- );
-
-}
-
-function calculateWinner(squares) {
-
- const lines = [
-
+let boxes = document.querySelectorAll(".box");
+let resetBtn = document.querySelector("#reset-btn");
+let newGameBtn = document.querySelector("#new-btn");
+let msgContainer = document.querySelector(".msg-container");
+let msg = document.querySelector("#msg");
+
+let turnO = true; //playerX, playerO
+let count = 0; //To Track Draw
+
+const winPatterns = [
   [0, 1, 2],
-
-  [3, 4, 5],
-
-  [6, 7, 8],
-
   [0, 3, 6],
-
-  [1, 4, 7],
-
-  [2, 5, 8],
-
   [0, 4, 8],
-
+  [1, 4, 7],
+  [2, 5, 8],
   [2, 4, 6],
+  [3, 4, 5],
+  [6, 7, 8],
+];
 
- ];
+const resetGame = () => {
+  turnO = true;
+  count = 0;
+  enableBoxes();
+  msgContainer.classList.add("hide");
+};
 
- for (let i = 0; i < lines.length; i++) {
+boxes.forEach((box) => {
+  box.addEventListener("click", () => {
+    if (turnO) {
+      //playerO
+      box.innerText = "O";
+      turnO = false;
+    } else {
+      //playerX
+      box.innerText = "X";
+      turnO = true;
+    }
+    box.disabled = true;
+    count++;
 
-  const [a, b, c] = lines[i];
+    let isWinner = checkWinner();
 
-  if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+    if (count === 9 && !isWinner) {
+      gameDraw();
+    }
+  });
+});
 
-   return squares[a];
+const gameDraw = () => {
+  msg.innerText = `Game was a Draw.`;
+  msgContainer.classList.remove("hide");
+  disableBoxes();
+};
 
+const disableBoxes = () => {
+  for (let box of boxes) {
+    box.disabled = true;
   }
+};
 
- }
+const enableBoxes = () => {
+  for (let box of boxes) {
+    box.disabled = false;
+    box.innerText = "";
+  }
+};
 
- return null;
+const showWinner = (winner) => {
+  msg.innerText = `Congratulations, Winner is ${winner}`;
+  msgContainer.classList.remove("hide");
+  disableBoxes();
+};
 
-}
+const checkWinner = () => {
+  for (let pattern of winPatterns) {
+    let pos1Val = boxes[pattern[0]].innerText;
+    let pos2Val = boxes[pattern[1]].innerText;
+    let pos3Val = boxes[pattern[2]].innerText;
+
+    if (pos1Val != "" && pos2Val != "" && pos3Val != "") {
+      if (pos1Val === pos2Val && pos2Val === pos3Val) {
+        showWinner(pos1Val);
+        return true;
+      }
+    }
+  }
+};
+
+newGameBtn.addEventListener("click", resetGame);
+resetBtn.addEventListener("click", resetGame);
